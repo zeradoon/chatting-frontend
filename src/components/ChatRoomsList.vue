@@ -1,17 +1,27 @@
 <template>
-  <div class="list row">
-    <div class="col-md-8">
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" placeholder="Search by custId"
+  <div id="app">
+    <div>
+      <div class="page sub-page">
+        <header class="hero">
+          <div>
+            <main-navigation />
+          </div>
+          <div class="form">
+            <div class="input-group">
+              <input type="text" placeholder="Search by custId" class="form-control mr-4" 
           v-model="custId"
           @keyup="sendMessage"/>
-        <div class="input-group-append">
-          <button class="btn btn-outline-secondary" type="button"
+          <div class="input-group-append">
+            <button class="btn btn-secondary" type="button"
             @click="retrieveChatRooms"
           >
             Search
           </button>
-        </div>
+          </div>
+          
+            </div>
+          </div>
+        </header>
       </div>
     </div>
 
@@ -26,7 +36,7 @@
                 <figure class="content">
                   <h5 v-if="custId === chatroom.hostCustId">{{ chatroom.guestCustId }} 님</h5>
                   <h5 v-else>{{ chatroom.hostCustId }} 님</h5>
-                  <p style="opacity:1">{{ chatroom.content }}</p>
+                  <p style="opacity:1;word-break:break-all">{{ chatroom.content }}</p>
                   <small style="opacity:0.65">{{ chatroom.registerTime | moment("from", "now")}}</small>
                 </figure>
                 <figure class="messaging__image-person" data-background-image="assets/img/author-01.jpg" style="background-image: url(&quot;assets/img/author-01.jpg&quot;);"></figure>
@@ -82,9 +92,11 @@
 
 <script>
 import ChattingDataService from "../services/ChattingDataService";
+import MainNavigation from './MainNavigation.vue';
 
 export default {
   name: "chatrooms-list",
+  components: { MainNavigation },
   data() {
     return {
       chatrooms: [],
