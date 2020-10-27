@@ -9,7 +9,7 @@ export default new Router({
     {
       path: "/",
       alias: "/chatrooms",
-      name: "tutorials",
+      name: "chatrooms",
       component: () => import("./components/ChatRoomsList")
     },
     {
