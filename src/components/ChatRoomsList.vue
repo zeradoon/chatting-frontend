@@ -14,21 +14,29 @@
         </div>
       </div>
     </div>
+
     <div class="col-md-6">
       <h4>ChatRooms List</h4>
-      <ul class="list-group">
-        <li class="list-group-item"
-          :class="{ active: index == currentIndex }"
-          v-for="(chatroom, index) in chatrooms"
-          :key="index"
-          @click="setActiveChatRoom(chatroom, index)"
-        >
-          {{ chatroom.chatRoomId }}
-          {{ chatroom.productId }}
-        </li>
-      </ul>
-
+      <div id="messaging__chat-list" class="messaging__box">
+        <div class="messaging__content">
+          <ul class="messaging__persons-list">
+            <li :class="{ active: index == currentIndex }" v-for="(chatroom, index) in chatrooms" :key="index" @click="enterChatRoom2(chatroom)">
+              <a href="#" class="messaging__person">
+                <figure class="messaging__image-item" data-background-image="assets/img/image-01.jpg" style="background-image: url(&quot;assets/img/image-01.jpg&quot;);"></figure>
+                <figure class="content">
+                  <h5 v-if="custId === chatroom.hostCustId">{{ chatroom.guestCustId }} 님</h5>
+                  <h5 v-else>{{ chatroom.hostCustId }} 님</h5>
+                  <p style="opacity:1">{{ chatroom.content }}</p>
+                  <small style="opacity:0.65">{{ chatroom.registerTime | moment("from", "now")}}</small>
+                </figure>
+                <figure class="messaging__image-person" data-background-image="assets/img/author-01.jpg" style="background-image: url(&quot;assets/img/author-01.jpg&quot;);"></figure>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
+    
     <div class="col-md-6">
       <div v-if="currentChatroom">
         <h4>ChatRoom</h4>
@@ -132,6 +140,10 @@ export default {
 
     enterChatRoom() {
         this.$router.push({name: 'chatroom-detail', params: {chatRoomId: this.currentChatroom.chatRoomId, custId: this.custId, guestCustId: this.currentChatroom.guestCustId, hostCustId: this.currentChatroom.hostCustId}})
+    },
+
+    enterChatRoom2(chatRoom) {
+        this.$router.push({name: 'chatroom-detail', params: {chatRoomId: chatRoom.chatRoomId, custId: this.custId, guestCustId: chatRoom.guestCustId, hostCustId: chatRoom.hostCustId}})
     }
   },
   mounted() {

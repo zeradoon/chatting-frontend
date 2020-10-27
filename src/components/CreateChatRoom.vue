@@ -1,9 +1,9 @@
 <template>
   <div class="submit-form">
-    <div v-if="!submitted">
       <div class="form-group">
-        <label for="guestCustId">구매자ID</label>
+        <label for="guestCustId">판매자ID</label>
         <input
+        type="text"
           class="form-control"
           id="guestCustId"
           required
@@ -12,7 +12,7 @@
         />
       </div>
       <div class="form-group">     
-        <label for="hostCustId">판매자ID</label>
+        <label for="hostCustId">구매자ID(채팅방 생성요청자)</label>
         <input
           type="text"
           class="form-control"
@@ -25,6 +25,7 @@
       <div class="form-group">
         <label for="productId">상품ID</label>
         <input
+        type="text"
           class="form-control"
           id="productId"
           required
@@ -34,17 +35,10 @@
       </div>
 
       <button @click="saveChatRoom" class="btn btn-success">Submit</button>
-    </div>
-
-    <div v-else>
-      <h4>You submitted successfully!</h4>
-      <button class="btn btn-success" @click="newChatRoom">Add</button>
-    </div>
   </div>
 </template>
 
 <script>
-import ChattingDataService from "../services/ChattingDataService";
 
 export default {
   name: "add-tutorial",
@@ -53,33 +47,13 @@ export default {
       chatroom: {
           guestCustId : "",
           hostCustId : "",
-          productId : "",
-          published: false
-      },
-      submitted: false
+          productId : ""
+      }
     };
   },
   methods: {
     saveChatRoom() {
-      var data = {
-        guestCustId: this.chatroom.guestCustId,
-        hostCustId: this.chatroom.hostCustId,
-        productId: this.chatroom.productId,
-      };
-
-      ChattingDataService.createChatRoom(data)
-        .then(response => {
-          console.log(response.data);
-          this.submitted = true;
-        })
-        .catch(e => {
-          console.log(e);
-        });
-    },
-    
-    newChatRoom() {
-      this.submitted = false;
-      this.tutorial = {};
+        this.$router.push({name: 'chatroom-detail', params: {chatRoomId: "", custId: this.chatroom.hostCustId, guestCustId: this.chatroom.guestCustId, hostCustId: this.chatroom.hostCustId, productId: this.chatroom.productId}})
     }
   }
 };

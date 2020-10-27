@@ -10,7 +10,7 @@
               <main-navigation />
               <div style="padding-bottom: 0rem;padding-top: 1rem">
                     <div class="container">
-                        <h2-mb2>{{opponentCustId}}님과의 대화</h2-mb2>
+                        <h2 style="margin-bottom: 0rem">{{opponentCustId}}님과의 대화</h2>
                         <hr style="margin-top: 1rem;margin-bottom: 1rem;">   
                     </div>
 
@@ -18,7 +18,7 @@
               </div>
               <div class="container">
                     <div class="sidebar-post" style="display: table;width: 100%;">
-                        <a href="Dm_003.html" class="background-image" style="background-image: url(&quot;../assets/img/blog-image-03.jpg&quot;);
+                        <a href="Dm_003.html" class="background-image" style="background-image: url(&quot;/img/blog-image-03.a5a06528.jpg&quot;);
                          width: 5rem; height: 5rem; display: block; box-shadow: 0 0.2rem 0.7rem 0 rgba(0,0,0, .08); border-radius: .4rem; float: left;">
                         <img src="../assets/img/blog-image-03.jpg">
                         </a>
@@ -48,7 +48,7 @@
                             <div id="messaging__chat-window" class="messaging__box" >
                                 <div class="messaging__content3" data-background-color="rgba(0,0,0,.05)" v-chat-scroll="{ image: true }">
                                     <div class="messaging__main-chat" >
-                                        <div class="messaging__main-chat__bubble"
+                                        <div style="word-break:break-all" class="messaging__main-chat__bubble"
                                         v-for="(chatcontent, index) in chatcontents"
                                         :class="{'user': isCust(chatcontent.custId) }"
                                         :key="index">
@@ -118,6 +118,7 @@ export default {
       hostCustId: "",
       guestCustId: "",
       opponentCustId: "",
+      productId: "",
       recvList: []
     }
   },
@@ -126,57 +127,118 @@ export default {
       this.custId = this.$route.params.custId
       this.hostCustId = this.$route.params.hostCustId
       this.guestCustId = this.$route.params.guestCustId
+      this.productId = this.$route.params.productId
       if(this.custId == this.hostCustId){
         this.opponentCustId = this.guestCustId
       }else{
         this.opponentCustId = this.hostCustId
       }
-      this.getAllContents()
+      if(this.chatRoomId != ""){
+        this.getAllContents()
+        this.connect()
+      }
   },
   created() {
     // App.vue가 생성되면 소켓 연결을 시도합니다.
-    this.connect()
+    
+
   },
   methods: {
     sendMessage (e) {
       if(e.keyCode === 13 && this.userName !== '' && this.content !== ''){
         this.send()
-        this.content = ''
       }
-    },    
+    },
     send() {
-        var data = {
-            chatRoomId: this.chatRoomId,
-            contentType: "message",
-            content: this.content,
-            custId : this.custId
+      if(this.chatRoomId == ""){
+        var data ={
+          productId: this.productId,
+          hostCustId: this.hostCustId,
+          guestCustId: this.guestCustId
         }
-        ChattingDataService.sendMessage(data)
+        ChattingDataService.createChatRoom(data)
         .then(response => {
-
-            console.log("Send message:" + this.content);
-            if(response.status == 200) {
-                console.log("전송성공");
-            }
-            if (this.stompClient && this.stompClient.connected) {
-                const msg = {
-                chatContentId: "",
-                chatRoomId: this.chatRoomId,
-                custId: this.custId,
-                contentType: "message",
-                content: data.content, 
-                readYn: "N",
-                registerTime: "",
-                updateTime: "방금"
-                };
-                this.stompClient.send("/sub", JSON.stringify(msg), {});
-            }
-        })
-        .catch(e => {
-            console.log(e);
+          console.log("create chatroom :" + response.status);
+          if( response.status == 200) {
+            // 채팅방 생성 성공
+            console.log("data: "+data.productId);
+            ChattingDataService.findChatRoomId(data.hostCustId, data.guestCustId, data.productId)
+            .then(response => {
+              // 채팅방 아이디 조회 성공
+              console.log("find chatRoomId :" + response.data);
+              if( response.status == 200) {
+                this.chatRoomId = response.data
+                this.connectcb(this.sendContents) 
+              }
+            })
+          }
         });
-        this.content = ''
-    },    
+      }else{
+        this.sendContents()
+      } 
+    }, 
+    sendContents () {
+      var data = {
+          chatRoomId: this.chatRoomId,
+          contentType: "message",
+          content: this.content,
+          custId : this.custId
+      }
+      ChattingDataService.sendMessage(data)
+      .then(response => {
+
+          console.log("Send message:" + this.content);
+          if(response.status == 200) {
+              console.log("전송성공");
+          }
+          if (this.stompClient && this.stompClient.connected) {
+              const msg = {
+              chatContentId: "",
+              chatRoomId: this.chatRoomId,
+              custId: this.custId,
+              contentType: "message",
+              content: data.content, 
+              readYn: "N",
+              registerTime: "",
+              updateTime: "방금"
+              };
+              this.stompClient.send("/sub", JSON.stringify(msg), {});
+          }
+      })
+      .catch(e => {
+          console.log(e);
+      });
+      this.content = ''
+    },      
+
+    connectcb(callback) {
+      const serverURL = "http://localhost:8000/ws/chat"
+      let socket = new SockJS(serverURL);
+      this.stompClient = Stomp.over(socket);
+      console.log(`소켓 연결을 시도합니다. 서버 주소: ${serverURL}`)
+      this.stompClient.connect(
+        {},
+        frame => {
+          // 소켓 연결 성공
+          this.connected = true;
+          console.log('소켓 연결 성공', frame);
+          // 서버의 메시지 전송 endpoint를 구독합니다.
+          // 이런형태를 pub sub 구조라고 합니다.
+          this.stompClient.subscribe("/pub/"+this.chatRoomId, res => {
+            console.log('구독으로 받은 메시지 입니다.', res.body);
+
+            // 받은 데이터를 json으로 파싱하고 리스트에 넣어줍니다.
+            this.chatcontents.push(JSON.parse(res.body))
+          });
+        },
+        error => {
+          // 소켓 연결 실패
+          console.log('소켓 연결 실패', error);
+          this.connected = false;
+        }
+      );
+      callback();        
+    },
     connect() {
       const serverURL = "http://localhost:8000/ws/chat"
       let socket = new SockJS(serverURL);
@@ -202,7 +264,7 @@ export default {
           console.log('소켓 연결 실패', error);
           this.connected = false;
         }
-      );        
+      );      
     },
     isCust(custId){
       if(custId == this.custId)

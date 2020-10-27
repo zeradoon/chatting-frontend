@@ -8,6 +8,11 @@ class ChattingDataService {
   findByChatRoomId(chatRoomId) {
     return httpquery.get(`/chatroom/${chatRoomId}`);
   }
+  
+  findChatRoomId(hostCustId, guestCustId, productId) {
+    return httpquery.get(`/chatroom/?hostCustId=${hostCustId}&guestCustId=${guestCustId}&productId=${productId}`);
+  }
+
   createChatRoom(data) {
     return httpcommand.post("/chatroom/create", data);
   }
