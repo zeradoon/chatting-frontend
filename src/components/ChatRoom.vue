@@ -1,5 +1,19 @@
 <template>
   <div id="app">
+
+    <div class="example-modal-window">
+    <ImagePreviewModal @close="closeModal" v-if="modal">
+      <template slot="body">
+        <img class="image ml-md-3" v-bind:src="imageData" style="width:100%; height:100%;">
+      </template>
+      <template slot="footer">
+        <div style="height: 44px;margin-left: 0px;">
+              <button class="btn btn-primary" style="padding-top: 10px;padding-bottom: 10px;" :disabled="!selectedFiles" @click="upload"><i class="fa fa-arrow-circle-up"></i> 사진 전송
+            </button>
+            </div>
+      </template>
+    </ImagePreviewModal>
+  </div>
     <div>
       <div class="page sub-page">
         <!--*********************************************************************************************************-->
@@ -52,8 +66,15 @@
                                         v-for="(chatcontent, index) in chatcontents"
                                         :class="{'user': isCust(chatcontent.custId) }"
                                         :key="index">
-                                            <p>
+                                            <p v-if="chatcontent.contentType === 'message'" style="opacity: 1;">
                                                 {{chatcontent.content}}
+                                                <small>{{chatcontent.updateTime | moment('YYYY-MM-DD a HH:mm:ss')}}</small>
+                                            </p>
+                                            <p v-else-if="chatcontent.contentType === 'image'" style="opacity: 1;">
+                                                <img v-bind:src="chatcontent.content" alt="" data-hash="1" style="
+          height: 100%;
+          width: 100%;
+      ">
                                                 <small>{{chatcontent.updateTime | moment('YYYY-MM-DD a HH:mm:ss')}}</small>
                                             </p>
                                         </div>
@@ -73,22 +94,50 @@
         
       </div>
     </div>
-     <div class="footerbar">
+     <div class="footerbar" style="display: block;">
         <div >
-            <div class="form">
+          <div v-if="currentFile && this.imageUploadFlag ===2" class="progress" style="height:44px">
+            <div
+              class="progress-bar progress-bar-info progress-bar-striped"
+              role="progressbar"
+              :aria-valuenow="progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :style="{ width: progress + '%' }"
+            >
+              {{ progress }}%
+            </div>
+          </div>
+          <div v-if="imageUploadFlag === 1" class="input-group" style="height: 44px;">
+            <div class="file-upload-previews"></div>
+            <div class="file-upload" style="flex: 1;height: 44px; margin-top: 0; margin-bottom: 0;">
+              <div class="MultiFile-wrap" id="MultiFile1">
+              <input type="file" ref="file" name="files[]" accept="gif|jpg|png|jpeg" @change="selectFile" class="file-upload-input with-preview" multiple title="Click to add files" maxlength="10" style="height: 44px;padding: 4rem 0 0 0;">
+              </div>
+              <span style="line-height: 4.5rem;"><i class="fa fa-plus-circle"></i>사진 선택</span>
+            </div>
+            <div class="input-group-append" style="height: 44px;margin-left: 0px;">
+              <button class="btn btn-secondary" style="padding-top: 10px;padding-bottom: 10px;" @click="imageUploadFlagChange()"><i class="fa fa-times-circle"></i></button>
+            </div>
+          </div>
+          <div class="form" v-else-if="imageUploadFlag === 0" >
                 <div class="input-group" style="height: 44px;">
+                    <div class="input-group-append" style="height: 44px;margin-right: 10px;">
+                        <button class="btn btn-secondary" style="padding-top: 10px;padding-bottom: 10px;" @click="imageUploadFlagChange()"><i class="fa fa-image"></i></button>
+                    </div>
                     <input
                     v-model="content"
                      type="text" 
-                     class="form-control mr-4" 
+                     class="form-control" 
                      placeholder="메세지를 입력하세요."
                      @keyup="sendMessage"
                      >
-                     <div class="input-group-append" style="height: 44px;">
+                    <div class="input-group-append" style="height: 44px;">
                         <button class="btn btn-primary" type="submit" style="padding-top: 10px;padding-bottom: 10px;" @click="send()">전송<i class="fa fa-send ml-3"></i></button>
-                        </div>
+                    </div>
                 </div>
             </div>
+            
         </div>
               
     </div>
@@ -100,10 +149,11 @@ import Stomp from 'webstomp-client'
 import SockJS from 'sockjs-client'
 import ChattingDataService from "../services/ChattingDataService";
 import MainNavigation from './MainNavigation.vue';
+import ImagePreviewModal from './ImagePreviewModal.vue';
 
 export default {
   name: 'ChatRoom',
-  components: { MainNavigation },
+  components: { MainNavigation ,ImagePreviewModal} ,
   data() {
     return {
       chatcontents: [],
@@ -119,7 +169,14 @@ export default {
       guestCustId: "",
       opponentCustId: "",
       productId: "",
-      recvList: []
+      recvList: [],
+      currentFile: undefined,
+      selectedFiles: undefined,
+      progress: 0,
+      imageUploadFlag: 0,
+      modal: false,
+      imageData: undefined,
+      imagefile: undefined
     }
   },
   mounted() {
@@ -139,14 +196,18 @@ export default {
       }
   },
   created() {
-    // App.vue가 생성되면 소켓 연결을 시도합니다.
-    
-
   },
   methods: {
     sendMessage (e) {
       if(e.keyCode === 13 && this.userName !== '' && this.content !== ''){
         this.send()
+      }
+    },
+    imageUploadFlagChange() {
+      if(this.imageUploadFlag == 1){
+        this.imageUploadFlag = 0;
+      }else if(this.imageUploadFlag == 0){
+        this.imageUploadFlag = 1;
       }
     },
     send() {
@@ -284,6 +345,81 @@ export default {
         .catch(e => {
           console.log(e);
         });
+    },
+    selectFile(event) {
+      this.modal = true
+      this.selectedFiles = this.$refs.file.files;
+      var input = event.target;
+      var reader = new FileReader();
+      reader.onload = (e) => {
+        this.imageData = e.target.result;
+        this.imagefile = input.files[0];
+      }
+      reader.readAsDataURL(input.files[0]);
+    },
+    upload() {
+      this.modal = false;
+      this.imageUploadFlag = 2;
+      this.progress = 0;
+      this.currentFile = this.selectedFiles.item(0);
+      ChattingDataService.uploadImage(this.currentFile,"chatting/"+this.chatRoomId, event => {
+        this.progress = Math.round((100*event.loaded) / event.total);
+      })
+      .then(response => {
+        console.log(response.data)
+        this.content = response.data
+        var data = {
+          chatRoomId: this.chatRoomId,
+          contentType: "image",
+          content: this.content,
+          custId : this.custId
+      }
+        ChattingDataService.sendMessage(data)
+        .then(response => {
+          console.log("Send message:" + this.content);
+          if(response.status == 200) {
+              console.log("전송성공");
+
+          }
+          if (this.stompClient && this.stompClient.connected) {
+              const msg = {
+              chatContentId: "",
+              chatRoomId: this.chatRoomId,
+              custId: this.custId,
+              contentType: "image",
+              content: data.content, 
+              readYn: "N",
+              registerTime: "",
+              updateTime: "방금"
+              };
+              this.stompClient.send("/sub", JSON.stringify(msg), {});
+          }
+      })
+      .catch(e => {
+          console.log(e);
+      });
+      this.selectedFiles = undefined;
+      this.progress = 0;
+      this.currentFile = undefined;
+      this.imageUploadFlag = 0;
+      this.content = "";
+      })
+    },
+    openModal() {
+      this.modal = true;
+    },
+    closeModal() {
+      this.modal = false;
+      this.$refs.file.value = '';
+    },
+    doSend() {
+      if (this.message.length > 0) {
+        alert(this.message)
+        this.message = ''
+        this.closeModal()
+      } else {
+        alert('메시지를 입력해주세요.')
+      }
     }
   }
 }

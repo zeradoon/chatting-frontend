@@ -25,13 +25,13 @@
       </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="">
       <h4>ChatRooms List</h4>
       <div id="messaging__chat-list" class="messaging__box">
         <div class="messaging__content">
           <ul class="messaging__persons-list">
-            <li :class="{ active: index == currentIndex }" v-for="(chatroom, index) in chatrooms" :key="index" @click="enterChatRoom2(chatroom)">
-              <a href="#" class="messaging__person">
+            <li v-for="(chatroom, index) in chatrooms" :key="index" @click="enterChatRoom2(chatroom)">
+              <a class="messaging__person">
                 <figure class="messaging__image-item" data-background-image="assets/img/image-01.jpg" style="background-image: url(&quot;assets/img/image-01.jpg&quot;);"></figure>
                 <figure class="content">
                   <h5 v-if="custId === chatroom.hostCustId">{{ chatroom.guestCustId }} 님</h5>

@@ -1,5 +1,6 @@
 import httpquery from "../http-query";
 import httpcommand from "../http-command";
+import httpUpload from "../http-upload";
 
 class ChattingDataService {
   getAllChatRoomByCustId(custId) {
@@ -23,6 +24,18 @@ class ChattingDataService {
 
   sendMessage(data) {
     return httpcommand.post("message/send", data);
+  }
+
+  uploadImage(file, dir, onUploadProgress) {
+    let formData = new FormData();
+    formData.append("data", file);
+    formData.append("dir", dir);
+    return httpUpload.post("upload", formData, {
+      headers: {
+        "Content-Type" : "multipart/form-data"
+      },
+      onUploadProgress
+    });
   }
 
 /*
